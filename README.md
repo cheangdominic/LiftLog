@@ -38,7 +38,6 @@ LiftLog is a modern Android application designed to help users efficiently log t
 
 | Component | Technology | Description |
 
-| :--- | :--- | :--- |
 
 | **UI** | **Jetpack Compose** | Declarative UI for a modern, responsive interface. |
 
