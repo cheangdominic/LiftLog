@@ -1,9 +1,12 @@
 package com.example.liftlog.api
 
-import retrofit2.http.GET
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
 
-interface ExerciseApi {
+class ExerciseApi(private val client: HttpClient) {
 
-    @GET("exercises")
-    suspend fun getAllExercises(): List<ExerciseDto>
+    suspend fun getAllExercises(): List<ExerciseDto> {
+        return client.get("exercises").body<List<ExerciseDto>>()
+    }
 }

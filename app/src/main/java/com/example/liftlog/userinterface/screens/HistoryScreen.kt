@@ -21,6 +21,7 @@ import com.example.liftlog.data.room.ExerciseEntity
 import kotlinx.coroutines.launch
 import com.example.liftlog.userinterface.screens.dialogs.ManualLogDialog
 import com.example.liftlog.userinterface.screens.dialogs.SeparatorDialog
+import com.example.liftlog.userinterface.screens.dialogs.ConfirmationDialog
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -33,6 +34,10 @@ fun HistoryScreen(state: ExerciseStateHolder) {
 
     var showEditSeparatorDialog by remember { mutableStateOf(false) }
     var separatorToEdit by remember { mutableStateOf<ExerciseStateHolder.HistoryItem.Separator?>(null) }
+
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var itemToDeleteId by remember { mutableStateOf<Int?>(null) }
+    var isDeletingExercise by remember { mutableStateOf(true) }
 
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -165,9 +170,9 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                                             text = { Text("Delete") },
                                             onClick = {
                                                 expanded = false
-                                                scope.launch {
-                                                    state.deleteExercise(item.ex.id)
-                                                }
+                                                itemToDeleteId = item.ex.id
+                                                isDeletingExercise = true
+                                                showDeleteConfirmation = true
                                             }
                                         )
                                     }
@@ -224,9 +229,9 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                                             text = { Text("Delete") },
                                             onClick = {
                                                 expanded = false
-                                                scope.launch {
-                                                    state.deleteSeparator(item.separatorId)
-                                                }
+                                                itemToDeleteId = item.separatorId
+                                                isDeletingExercise = false
+                                                showDeleteConfirmation = true
                                             }
                                         )
                                     }
@@ -252,6 +257,30 @@ fun HistoryScreen(state: ExerciseStateHolder) {
             state = state,
             initialSeparator = separatorToEdit!!,
             onDismiss = { showEditSeparatorDialog = false; separatorToEdit = null }
+        )
+    }
+
+    if (showDeleteConfirmation && itemToDeleteId != null) {
+        val idToDelete = itemToDeleteId!!
+        val itemName = if (isDeletingExercise) "exercise" else "separator"
+        ConfirmationDialog(
+            title = "Confirm Deletion",
+            text = "Are you sure you want to permanently delete this $itemName from your history?",
+            onConfirm = {
+                scope.launch {
+                    if (isDeletingExercise) {
+                        state.deleteExercise(idToDelete)
+                    } else {
+                        state.deleteSeparator(idToDelete)
+                    }
+                }
+                itemToDeleteId = null
+                showDeleteConfirmation = false
+            },
+            onDismiss = {
+                itemToDeleteId = null
+                showDeleteConfirmation = false
+            }
         )
     }
 }

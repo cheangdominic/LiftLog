@@ -1,5 +1,8 @@
 package com.example.liftlog.api
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class ExerciseDto(
     val id: String,
     val name: String,

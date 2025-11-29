@@ -1,41 +1,51 @@
 package com.example.liftlog.api
-import com.example.liftlog.BuildConfig
 
-import com.google.gson.GsonBuilder
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
+import com.example.liftlog.BuildConfig
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.header
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiModule {
 
     private const val BASE_URL = "https://exercisedb.p.rapidapi.com/"
 
-    private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BASIC
+    val apiClient: HttpClient = HttpClient(OkHttp) {
+
+        defaultRequest {
+            url(BASE_URL)
+            header("X-RapidAPI-Key", BuildConfig.EXERCISEDB_API_KEY)
+            header("X-RapidAPI-Host", BuildConfig.EXERCISEDB_API_HOST)
+        }
+
+        install(ContentNegotiation) {
+            json(Json {
+                prettyPrint = true
+                ignoreUnknownKeys = true
+                isLenient = true
+            })
+        }
+
+        install(Logging) {
+            level = LogLevel.ALL
+            logger = object : Logger {
+                override fun log(message: String) {
+                    HttpLoggingInterceptor.Logger.DEFAULT.log(message)
+                }
+            }
+        }
+
+        engine {
+            config {
+
+            }
+        }
     }
-
-    private val headerInterceptor = Interceptor { chain ->
-        val req = chain.request().newBuilder()
-            .addHeader("X-RapidAPI-Key", BuildConfig.EXERCISEDB_API_KEY)
-            .addHeader("X-RapidAPI-Host", BuildConfig.EXERCISEDB_API_HOST)
-            .build()
-        chain.proceed(req)
-    }
-
-    private val client = OkHttpClient.Builder()
-        .addInterceptor(logging)
-        .addInterceptor(headerInterceptor)
-        .build()
-
-    private val gson = GsonBuilder().create()
-
-    val api: ExerciseApi =
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-            .create(ExerciseApi::class.java)
 }
