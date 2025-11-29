@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
 
+// Composable screen for viewing exercise details and logging a workout entry.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
@@ -23,9 +24,15 @@ fun DetailScreen(
     exerciseId: String,
     nav: NavController
 ) {
+    // Attempt to find the full exercise object using the passed ID.
+    // If the exercise is not found, the function returns early.
     val ex = state.apiExercises.find { it.id == exerciseId } ?: return
+
+    // Coroutine scope for launching asynchronous operations (like saving data).
     val scope = rememberCoroutineScope()
 
+    // State variables for user input fields (Sets, Reps, Weight).
+    // They are initialized as empty strings.
     var sets by remember { mutableStateOf("") }
     var reps by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
@@ -34,12 +41,14 @@ fun DetailScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
+                    // Display the name of the exercise, capitalized.
                     Text(
                         ex.name.capitalizeWords(),
                         style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 },
                 navigationIcon = {
+                    // Back button to return to the previous screen (ExercisesScreen).
                     IconButton(onClick = {
                         nav.navigateUp()
                     }) {
@@ -49,6 +58,7 @@ fun DetailScreen(
                         )
                     }
                 },
+                // Custom colors for this specific Top Bar.
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -63,6 +73,7 @@ fun DetailScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp, vertical = 10.dp)
         ) {
+            // Card displaying static exercise information (like target muscle).
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -95,10 +106,12 @@ fun DetailScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Row containing the three input fields for logging.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // Sets input field. Filters input to only allow digits.
                 OutlinedTextField(
                     value = sets,
                     onValueChange = { sets = it.filter { c -> c.isDigit() } },
@@ -109,6 +122,7 @@ fun DetailScreen(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
 
+                // Reps input field. Filters input to only allow digits.
                 OutlinedTextField(
                     value = reps,
                     onValueChange = { reps = it.filter { c -> c.isDigit() } },
@@ -119,6 +133,7 @@ fun DetailScreen(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
 
+                // Weight input field. Filters input to allow digits and the decimal point ('.').
                 OutlinedTextField(
                     value = weight,
                     onValueChange = { weight = it.filter { c -> c.isDigit() || c == '.' } },
@@ -131,14 +146,20 @@ fun DetailScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Button to save the logged workout data.
             Button(
                 onClick = {
+                    // Launch a coroutine to perform the database operation asynchronously.
                     scope.launch {
+                        // Safely convert input strings to their corresponding numeric types,
+                        // resulting in null if conversion fails (e.g., empty string).
                         val setsInt = sets.toIntOrNull()
                         val repsInt = reps.toIntOrNull()
                         val weightDouble = weight.toDoubleOrNull()
 
+                        // Call the state holder function to save the new exercise log.
                         state.saveExercise(ex.name, ex.target, setsInt, repsInt, weightDouble)
+                        // Navigate back to the previous screen (ExercisesScreen) after saving.
                         nav.navigateUp()
                     }
                 },

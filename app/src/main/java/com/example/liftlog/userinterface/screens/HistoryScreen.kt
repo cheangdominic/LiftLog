@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
@@ -23,24 +24,38 @@ import com.example.liftlog.userinterface.screens.dialogs.ManualLogDialog
 import com.example.liftlog.userinterface.screens.dialogs.SeparatorDialog
 import com.example.liftlog.userinterface.screens.dialogs.ConfirmationDialog
 
+/**
+ * Screen to display the user's workout history, including exercises and separators.
+ *
+ * @param state The ExerciseStateHolder which holds and manages the history data.
+ */
 @SuppressLint("DefaultLocale")
 @Composable
 fun HistoryScreen(state: ExerciseStateHolder) {
+    // State for the text input field used to add new separators.
     var newSeparator by remember { mutableStateOf("") }
+    // Coroutine scope for executing asynchronous operations (like DB calls).
     val scope = rememberCoroutineScope()
+    // Define the state for controlling the scroll position of the LazyColumn.
+    val listState = rememberLazyListState()
 
+    // State for exercise editing dialog.
     var showEditExerciseDialog by remember { mutableStateOf(false) }
     var exerciseToEdit by remember { mutableStateOf<ExerciseEntity?>(null) }
 
+    // State for separator editing dialog.
     var showEditSeparatorDialog by remember { mutableStateOf(false) }
     var separatorToEdit by remember { mutableStateOf<ExerciseStateHolder.HistoryItem.Separator?>(null) }
 
+    // State for deletion confirmation dialog.
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var itemToDeleteId by remember { mutableStateOf<Int?>(null) }
+    // Flag to differentiate between deleting an Exercise or a Separator.
     var isDeletingExercise by remember { mutableStateOf(true) }
 
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // --- Top Control Bar: Separator Input & Clear All Button ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -48,6 +63,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Text field for entering a new separator name.
             BasicTextField(
                 value = newSeparator,
                 onValueChange = { newSeparator = it },
@@ -59,11 +75,14 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                 singleLine = true
             )
 
+            // Button to add the new separator to the history.
             Button(onClick = {
                 if (newSeparator.isNotBlank()) {
                     scope.launch {
                         state.addSeparator(newSeparator)
-                        newSeparator = ""
+                        // Scroll to the first item (index 0) after adding the separator.
+                        listState.animateScrollToItem(0)
+                        newSeparator = "" // Clear the input field after adding.
                     }
                 }
             }) {
@@ -72,6 +91,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
 
             Spacer(modifier = Modifier.width(8.dp))
 
+            // Button to clear the entire workout history.
             Button(onClick = {
                 scope.launch {
                     state.clearAll()
@@ -81,15 +101,30 @@ fun HistoryScreen(state: ExerciseStateHolder) {
             }
         }
 
+        // --- LazyColumn: Displaying the Workout History List ---
         LazyColumn(
+            // Use the listState to control scrolling.
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 12.dp, vertical = 4.dp)
         ) {
-            items(state.historyItems, key = { it.hashCode() }) { item ->
+            // Display items from the history list, which contains both Exercises and Separators.
+            items(
+                state.historyItems,
+                // Use a composite key (type prefix + ID) to ensure uniqueness and stability,
+                // as IDs might be duplicated across ExerciseEntity and Separator entities.
+                key = {
+                    when (it) {
+                        is ExerciseStateHolder.HistoryItem.Exercise -> "ex_${it.ex.id}"
+                        is ExerciseStateHolder.HistoryItem.Separator -> "sep_${it.separatorId}"
+                    }
+                }
+            ) { item ->
                 when (item) {
+                    // Case for rendering an individual logged exercise.
                     is ExerciseStateHolder.HistoryItem.Exercise -> {
-                        var expanded by remember { mutableStateOf(false) }
+                        var expanded by remember { mutableStateOf(false) } // State for the exercise dropdown menu.
 
                         Card(
                             modifier = Modifier
@@ -108,6 +143,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                                 Column(
                                     modifier = Modifier.weight(1f)
                                 ) {
+                                    // Exercise Name
                                     Text(
                                         text = item.ex.exerciseName.capitalizeWords(),
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -115,6 +151,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
 
+                                    // Details Row (Sets, Reps, Weight)
                                     Row(
                                         modifier = Modifier.fillMaxWidth(0.9f),
                                         horizontalArrangement = Arrangement.SpaceBetween
@@ -130,6 +167,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                                             color = Color(0xFF666666)
                                         )
                                         Text(
+                                            // Format weight to one decimal place if present.
                                             text = "Weight: ${item.ex.weight?.let { String.format("%.1f", it) } ?: "-"} lbs",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = Color(0xFF666666)
@@ -138,6 +176,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
 
                                     Spacer(modifier = Modifier.height(6.dp))
 
+                                    // Target Muscle Group
                                     Text(
                                         text = "Muscle: ${item.ex.muscle?.capitalizeWords()}",
                                         style = MaterialTheme.typography.bodyMedium,
@@ -145,6 +184,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                                     )
                                 }
 
+                                // Dropdown menu for Edit/Delete options.
                                 Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
                                     IconButton(onClick = { expanded = true }) {
                                         Icon(
@@ -181,14 +221,16 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                         }
                     }
 
+                    // Case for rendering a user-added separator.
                     is ExerciseStateHolder.HistoryItem.Separator -> {
-                        var expanded by remember { mutableStateOf(false) }
+                        var expanded by remember { mutableStateOf(false) } // State for the separator dropdown menu.
 
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 6.dp),
                             shape = RoundedCornerShape(12.dp),
+                            // Distinct color for separators for visual differentiation.
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E0E0))
                         ) {
                             Row(
@@ -197,6 +239,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                                     .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                // Separator Text
                                 Text(
                                     text = item.text.capitalizeWords(),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -204,6 +247,7 @@ fun HistoryScreen(state: ExerciseStateHolder) {
                                     color = Color(0xFF1A1A1A)
                                 )
 
+                                // Dropdown menu for Edit/Delete options.
                                 Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
                                     IconButton(onClick = { expanded = true }) {
                                         Icon(
@@ -244,22 +288,29 @@ fun HistoryScreen(state: ExerciseStateHolder) {
         }
     }
 
+    // --- Conditional Dialog Rendering ---
+
+    // 1. ManualLogDialog for editing an existing Exercise.
     if (showEditExerciseDialog && exerciseToEdit != null) {
         ManualLogDialog(
             state = state,
+            // Pass the existing exercise data to pre-fill the form.
             initialExercise = exerciseToEdit!!,
             onDismiss = { showEditExerciseDialog = false; exerciseToEdit = null }
         )
     }
 
+    // 2. SeparatorDialog for editing an existing Separator.
     if (showEditSeparatorDialog && separatorToEdit != null) {
         SeparatorDialog(
             state = state,
+            // Pass the existing separator data to pre-fill the form.
             initialSeparator = separatorToEdit!!,
             onDismiss = { showEditSeparatorDialog = false; separatorToEdit = null }
         )
     }
 
+    // 3. ConfirmationDialog for deleting an Exercise or Separator.
     if (showDeleteConfirmation && itemToDeleteId != null) {
         val idToDelete = itemToDeleteId!!
         val itemName = if (isDeletingExercise) "exercise" else "separator"
@@ -268,17 +319,18 @@ fun HistoryScreen(state: ExerciseStateHolder) {
             text = "Are you sure you want to permanently delete this $itemName from your history?",
             onConfirm = {
                 scope.launch {
+                    // Call the appropriate delete function based on the flag.
                     if (isDeletingExercise) {
                         state.deleteExercise(idToDelete)
                     } else {
                         state.deleteSeparator(idToDelete)
                     }
                 }
-                itemToDeleteId = null
+                itemToDeleteId = null // Clear state after action
                 showDeleteConfirmation = false
             },
             onDismiss = {
-                itemToDeleteId = null
+                itemToDeleteId = null // Clear state on dismiss
                 showDeleteConfirmation = false
             }
         )

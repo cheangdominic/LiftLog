@@ -8,15 +8,22 @@ import androidx.compose.ui.unit.dp
 import com.example.liftlog.state.ExerciseStateHolder
 import kotlinx.coroutines.launch
 
+// Composable dialog used to edit the text of an existing history separator.
 @Composable
 fun SeparatorDialog(
     state: ExerciseStateHolder,
+    // The separator item containing the current ID and initial text.
     initialSeparator: ExerciseStateHolder.HistoryItem.Separator,
+    // Callback to close the dialog.
     onDismiss: () -> Unit
 ) {
+    // Extract the initial text to populate the TextField.
     val initialText = initialSeparator.text
+    // State to hold the user's potentially updated separator text.
     var newSeparatorText by remember { mutableStateOf(initialText) }
+    // Coroutine scope for running the update operation.
     val scope = rememberCoroutineScope()
+    // Validation: the new text must not be empty after trimming whitespace.
     val isTextValid = newSeparatorText.trim().isNotEmpty()
 
     AlertDialog(
@@ -39,11 +46,16 @@ fun SeparatorDialog(
                 onClick = {
                     if (isTextValid) {
                         scope.launch {
-                            state.updateSeparator(initialSeparator.separatorId, newSeparatorText.trim())
-                            onDismiss()
+                            // Call the state holder to update the separator in the database.
+                            state.updateSeparator(
+                                initialSeparator.separatorId,
+                                newSeparatorText.trim()
+                            )
+                            onDismiss() // Close the dialog upon successful update.
                         }
                     }
                 },
+                // The Update button is only enabled if the text input is valid.
                 enabled = isTextValid
             ) {
                 Text("Update")
