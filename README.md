@@ -46,7 +46,7 @@ LiftLog is a modern Android application designed to help users efficiently log t
 
 | **Persistence** | **Room** | Local SQL database used to store exercises, separators, and the order of history items. |
 
-| **Networking** | **Retrofit** & Gson | Used to fetch exercise data from the external **ExerciseDB API**. |
+| **Networking** | **Ktor** | Used to fetch exercise data from the external **ExerciseDB API**. |
 
 | **Concurrency** | **Kotlin Coroutines** | Used for managing asynchronous operations, especially database (Room) and network (Retrofit) calls. |
 
