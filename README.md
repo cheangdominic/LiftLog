@@ -36,20 +36,15 @@ LiftLog is a modern Android application designed to help users efficiently log t
 
 
 
-| Component | Technology | Description |
+| **Component**       | **Technology**                  | **Description**                                                                 |
+|--------------------|--------------------------------|-------------------------------------------------------------------------------|
+| UI                  | Jetpack Compose                 | Declarative UI framework for a modern, responsive interface.                  |
+| State Management    | MVVM & Kotlin `StateHolder`     | Handles business logic and maintains app state across the lifecycle.          |
+| Persistence         | Room                            | Local SQL database for storing exercises, separators, and history order.      |
+| Networking          | Ktor                            | Fetches exercise data from the external **ExerciseDB API**.                   |
+| Concurrency         | Kotlin Coroutines               | Manages asynchronous operations for database and network tasks.               |
+| Build System        | Gradle Kotlin DSL (.kts)        | Modern, type-safe build configuration.                                        |
 
-
-| **UI** | **Jetpack Compose** | Declarative UI for a modern, responsive interface. |
-
-| **State Management** | **MVVM** & Kotlin `StateHolder` | Handles business logic and state persistence across the app lifecycle. |
-
-| **Persistence** | **Room** | Local SQL database used to store exercises, separators, and the order of history items. |
-
-| **Networking** | **Ktor** | Used to fetch exercise data from the external **ExerciseDB API**. |
-
-| **Concurrency** | **Kotlin Coroutines** | Used for managing asynchronous operations, especially database (Room) and network (Retrofit) calls. |
-
-| **Build System** | **Gradle Kotlin DSL (.kts)** | Modern and type-safe configuration. |
 
 
 
